@@ -1,0 +1,85 @@
+import pandas as pd
+import random
+import statistics
+
+excel_file = "C:\\Users\\sarad\\HAP618\\simulationdataset.xlsx"
+df = pd.read_excel(excel_file)
+
+simulation_hours = 12
+patient_data = df[['Name', 'Age', 'Gender', 'Medical Condition']].to_dict('records')
+
+# variables for the simulation
+total_care_time = 0
+patients_in_queue = []
+total_patients = 0
+
+# simulate patient arrivals for hour 1
+patients_arriving = random.randint(0, 5)
+total_patients += patients_arriving
+patients_in_queue.extend(patient_data[:patients_arriving])
+
+random.shuffle(patient_data)
+
+# Simulate care function
+def simulate_care(patient, total_care_time_hour):
+    medical_condition = patient['Medical Condition']
+
+    # Handle 'None' condition separately
+    if medical_condition == 'None':
+        care_time = random.randint(10, 30)
+    else:
+        care_time_range = {
+            'Diabetes': (15, 30),
+            'Asthma': (20, 25),
+            'Obesity': (10, 20),
+            'Arthritis': (15, 25),
+            'Hypertension': (10, 20),
+            'Cancer': (30, 40),
+        }.get(medical_condition, (10, 30))
+
+        care_time = random.randint(*care_time_range)
+
+    if care_time > 0:
+        if total_care_time_hour + care_time > 60:
+            care_time = max(0, 60 - total_care_time_hour)
+
+    return care_time
+
+# simulation loop
+for hour in range(1, simulation_hours + 1):
+    total_care_time_hour = 0
+
+    # simulate the patient arrivals
+    patients_arriving = random.randint(0, 5)
+    total_patients += patients_arriving
+
+    patients_for_hour = patient_data.copy()
+    random.shuffle(patients_for_hour)
+
+    patients_in_queue.extend(patients_for_hour[:patients_arriving])
+
+    # simulate care for each patient
+    for _ in range(patients_arriving):
+        if patients_in_queue:
+            current_patient = patients_in_queue.pop(0)
+            care_time = simulate_care(current_patient, total_care_time_hour)
+
+            if care_time > 0:
+                total_care_time_hour += care_time
+                total_care_time += care_time
+
+                print(f"Hour {hour}, patient {current_patient['Name']} ({current_patient['Medical Condition']}):")
+                print(f" Total time: {care_time} minutes")
+
+    # exclude patients with care time of 0 from being added to the queue for the next hour
+    patients_in_queue = [patient for patient in patients_in_queue if patient['Medical Condition'] != 'None']
+    
+    # Print a message for hours where no patients arrive
+    if patients_arriving == 0 or total_care_time_hour == 0:
+        print(f"Hour {hour}: No patients arrived.")
+
+average_care_time = total_care_time / total_patients if total_patients > 0 else 0
+
+print(f"\nTotal Patients: {total_patients}")
+print(f"Total care time: {total_care_time} minutes")
+print(f"Average care time per patient: {average_care_time:.2f} minutes")
